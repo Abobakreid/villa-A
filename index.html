@@ -640,7 +640,7 @@
 
       // Face transforms
       let faceTransforms = [
-        [5], // front: 180°
+        [2], // front: 180°
         [1, 5], // back: Flip H + 180°
         [1, 6], // top: Flip H + 270°
         [1, 4], // bottom: Flip H + 90°
@@ -764,81 +764,59 @@
         return faces;
       }
 
-
       async function loadImagesFromServer() {
-  const statusDiv = document.getElementById("loadingStatus");
-  const baseUrl = "https://pub-cd33190839e0462ab72c4629e422fd3d.r2.dev/A/v1/";
-  const imagePrefix = "v1-.";
-  const maxImages = 250; // جرب لحد 1000 صورة
+        const statusDiv = document.getElementById("loadingStatus");
+        const baseUrl =
+          "https://pub-cd33190839e0462ab72c4629e422fd3d.r2.dev/AA/v1/";
+        const startFrom = 0;
+        const totalImages = 93;
 
-  statusDiv.textContent = "جاري البحث عن الصور...";
-  document.getElementById("loading").style.display = "block";
+        originalImages = [];
+        let successCount = 0;
 
-  originalImages = [];
-  let successCount = 0;
+        statusDiv.textContent = "جاري تحميل الصور...";
+        document.getElementById("loading").style.display = "block";
 
-  function tryLoadImage(imageNumber) {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
+        async function tryLoadImage(i) {
+          return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
 
-      // timeout عشان ميستناش كتير لو الصورة مش موجودة
-      const timeout = setTimeout(() => {
-        img.src = "";
-        resolve(null);
-      }, 5000); // 5 ثواني timeout
+            img.onload = () => {
+              img.index = i;
+              resolve(img);
+            };
 
-      img.onload = () => {
-        clearTimeout(timeout);
-        img.fileName = `${imagePrefix}${imageNumber}.jpg`;
-        img.index = parseInt(imageNumber, 10);
-        resolve(img);
-      };
+            img.onerror = () => resolve(null);
 
-      img.onerror = () => {
-        clearTimeout(timeout);
-        resolve(null);
-      };
-
-      img.src = `${baseUrl}${imagePrefix}${imageNumber}.jpg`;
-    });
-  }
-
-  // جرب كل الأرقام من 1 لـ maxImages
-  const loadPromises = [];
-  
-  for (let i = 1; i <= maxImages; i++) {
-    const imageNumber = String(i).padStart(4, "0");
-    
-    loadPromises.push(
-      tryLoadImage(imageNumber).then((img) => {
-        if (img) {
-          successCount++;
-          statusDiv.textContent = `تم تحميل ${successCount} صورة...`;
+            img.src = `${baseUrl}(${i}).jpg`;
+          });
         }
-        return img;
-      })
-    );
-  }
 
-  statusDiv.textContent = "جاري فحص جميع الصور...";
-  const results = await Promise.all(loadPromises);
+        const loadPromises = [];
+        for (let i = startFrom; i <= totalImages; i++) {
+          loadPromises.push(
+            tryLoadImage(i).then((img) => {
+              if (img) {
+                successCount++;
+                statusDiv.textContent = `تم تحميل ${successCount}`;
+              }
+              return img;
+            })
+          );
+        }
 
-  originalImages = results
-    .filter(Boolean) // خد بس اللي حملت
-    .sort((a, b) => a.index - b.index);
+        const results = await Promise.all(loadPromises);
+        originalImages = results.filter(Boolean);
 
-  if (originalImages.length > 0) {
-    createViewer(originalImages[0]);
-    updateImageCounter();
-    updateNavigationButtons();
-    statusDiv.textContent = `تم التحميل بنجاح 🎉 (${originalImages.length} صورة)`;
-    statusDiv.style.color = "#4CAF50";
-  } else {
-    statusDiv.textContent = "لم يتم العثور على صور";
-    document.getElementById("loading").style.display = "none";
-  }
-}
+        if (originalImages.length) {
+          createViewer(originalImages[0]);
+          statusDiv.textContent = "تم التحميل بنجاح 🎉";
+          document.getElementById("loading").style.display = "none";
+        } else {
+          statusDiv.textContent = "لم يتم العثور على صور";
+        }
+      }
 
       function createViewer(image) {
         try {
@@ -859,27 +837,27 @@
             new THREE.MeshBasicMaterial({
               map: faces[4],
               side: THREE.BackSide,
-            }),
+            }), // Right
             new THREE.MeshBasicMaterial({
               map: faces[5],
               side: THREE.BackSide,
-            }),
+            }), // Left
             new THREE.MeshBasicMaterial({
               map: faces[2],
               side: THREE.BackSide,
-            }),
+            }), // Top
             new THREE.MeshBasicMaterial({
               map: faces[3],
               side: THREE.BackSide,
-            }),
+            }), // Bottom
             new THREE.MeshBasicMaterial({
               map: faces[1],
               side: THREE.BackSide,
-            }),
+            }), // Back
             new THREE.MeshBasicMaterial({
               map: faces[0],
               side: THREE.BackSide,
-            }),
+            }), // Front
           ];
 
           mesh = new THREE.Mesh(geometry, materials);
@@ -1160,5 +1138,3 @@
     </script>
   </body>
 </html>
-
-
